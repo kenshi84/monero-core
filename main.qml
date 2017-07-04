@@ -322,7 +322,7 @@ ApplicationWindow {
         }
         // initialize transaction history once wallet is initialized first time;
         if (!walletInitialized) {
-            currentWallet.history.refresh()
+            currentWallet.history.refresh(currentWallet.currentSubaddressAccount)
             walletInitialized = true
         }
      }
@@ -365,13 +365,13 @@ ApplicationWindow {
 
     function onWalletUpdate() {
         console.log(">>> wallet updated")
-        middlePanel.unlockedBalanceText = leftPanel.unlockedBalanceText =  walletManager.displayAmount(currentWallet.unlockedBalance);
-        middlePanel.balanceText = leftPanel.balanceText = walletManager.displayAmount(currentWallet.balance);
+        middlePanel.unlockedBalanceText = leftPanel.unlockedBalanceText =  walletManager.displayAmount(currentWallet.unlockedBalance(currentWallet.currentSubaddressAccount));
+        middlePanel.balanceText = leftPanel.balanceText = walletManager.displayAmount(currentWallet.balance(currentWallet.currentSubaddressAccount));
         // Update history if new block found since last update
         if(foundNewBlock) {
             foundNewBlock = false;
             console.log("New block found - updating history")
-            currentWallet.history.refresh()
+            currentWallet.history.refresh(currentWallet.currentSubaddressAccount)
             timeToUnlock = currentWallet.history.minutesToUnlock
             leftPanel.minutesToUnlockTxt = (timeToUnlock > 0)? (timeToUnlock == 20)? qsTr("Unlocked balance (waiting for block)") : qsTr("Unlocked balance (~%1 min)").arg(timeToUnlock) : qsTr("Unlocked balance");
         }
@@ -447,6 +447,9 @@ ApplicationWindow {
                 console.log("Saving wallet after first refresh");
                 currentWallet.store()
                 isNewWallet = false
+
+                // Update History
+                currentWallet.history.refresh(currentWallet.currentSubaddressAccount);
             }
 
             // recovering from seed is finished after first refresh
@@ -457,7 +460,7 @@ ApplicationWindow {
 
         // Update history on every refresh if it's empty
         if(currentWallet.history.count == 0)
-            currentWallet.history.refresh()
+            currentWallet.history.refresh(currentWallet.currentSubaddressAccount)
 
         onWalletUpdate();
     }
@@ -520,19 +523,21 @@ ApplicationWindow {
         currentWallet.refresh()
         console.log("Confirmed money found")
         // history refresh is handled by walletUpdated
+        currentWallet.history.refresh(currentWallet.currentSubaddressAccount) // this will refresh model
+        currentWallet.subaddress.refresh(currentWallet.currentSubaddressAccount)
     }
 
     function onWalletUnconfirmedMoneyReceived(txId, amount) {
         // refresh history
         console.log("unconfirmed money found")
-        currentWallet.history.refresh()
+        currentWallet.history.refresh(currentWallet.currentSubaddressAccount)
     }
 
     function onWalletMoneySent(txId, amount) {
         // refresh transaction history here
         console.log("money sent found")
         currentWallet.refresh()
-        currentWallet.history.refresh() // this will refresh model
+        currentWallet.history.refresh(currentWallet.currentSubaddressAccount) // this will refresh model
     }
 
     function walletsFound() {
@@ -578,8 +583,11 @@ ApplicationWindow {
             // here we show confirmation popup;
 
             transactionConfirmationPopup.title = qsTr("Confirmation") + translationManager.emptyString
-            transactionConfirmationPopup.text  = qsTr("Please confirm transaction:\n")
-                        + (address === "" ? "" : (qsTr("\nAddress: ") + address))
+            transactionConfirmationPopup.text  = qsTr("Please confirm transaction:\n");
+            for (var i = 0; i < transaction.subaddrIndices.length; ++i)
+                transactionConfirmationPopup.text += qsTr("\nSpending address index: ") + transaction.subaddrIndices[i]
+            transactionConfirmationPopup.text +=
+                          (address === "" ? "" : (qsTr("\n\nAddress: ") + address))
                         + (paymentId === "" ? "" : (qsTr("\nPayment ID: ") + paymentId))
                         + qsTr("\n\nAmount: ") + walletManager.displayAmount(transaction.amount)
                         + qsTr("\nFee: ") + walletManager.displayAmount(transaction.fee)
