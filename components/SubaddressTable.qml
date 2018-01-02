@@ -51,13 +51,15 @@ ListView {
             anchors.margins: 5
             onTextChanged: cursorPosition = 0
             text: address
+            showBorder: false
 
             IconButton {
+                id: clipboardButton
                 imageSource: "../images/copyToClipboard.png"
-                z: 100
                 onClicked: {
-                    console.log(addressLine.text + " copied to clipboard")
-                    clipboard.setText(addressLine.text)
+                    console.log(addressLine.text + " copied to clipboard");
+                    clipboard.setText(addressLine.text);
+                    appWindow.showStatusMessage(qsTr("Address copied to clipboard"),3);
                 }
             }
         }
@@ -88,7 +90,12 @@ ListView {
         }
 
         MouseArea {
-            anchors.fill: parent
+            z: 5
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.rightMargin: clipboardButton.width
             onClicked: listView.currentIndex = index
         }
     }

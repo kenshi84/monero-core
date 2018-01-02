@@ -42,12 +42,13 @@ import moneroComponents.Subaddress 1.0
 import moneroComponents.SubaddressModel 1.0
 
 Rectangle {
-
+    id: pageReceive
     color: "#F0EEEE"
-    property alias addressText : addressLine.text
+    property var model
+    property var current_address
+    property alias addressText : pageReceive.current_address
     property alias paymentIdText : paymentIdLine.text
     property alias integratedAddressText : integratedAddressLine.text
-    property var model
     property string trackingLineText: ""
 
     function updatePaymentId(payment_id) {
@@ -194,29 +195,8 @@ Rectangle {
             id: addressRow
             Label {
                 id: addressLabel
-                text: qsTr("Address") + translationManager.emptyString
+                text: qsTr("Addresses") + translationManager.emptyString
                 width: mainLayout.labelWidth
-            }
-
-            LineEdit {
-                id: addressLine
-                fontSize: mainLayout.lineEditFontSize
-                placeholderText: qsTr("ReadOnly wallet address displayed here") + translationManager.emptyString;
-                readOnly: true
-                width: mainLayout.editWidth
-                Layout.fillWidth: true
-                onTextChanged: cursorPosition = 0
-
-                IconButton {
-                    imageSource: "../images/copyToClipboard.png"
-                    onClicked: {
-                        if (addressLine.text.length > 0) {
-                            console.log(addressLine.text + " copied to clipboard")
-                            clipboard.setText(addressLine.text)
-                            appWindow.showStatusMessage(qsTr("Address copied to clipboard"),3)
-                        }
-                    }
-                }
             }
 
             ListModel {
@@ -248,8 +228,7 @@ Rectangle {
                     anchors.fill: parent
                     onContentYChanged: flickableScroll.flickableContentYChanged()
                     onCurrentItemChanged: {
-                        if (appWindow.currentWallet !== undefined)
-                            addressLine.text = appWindow.currentWallet.address(appWindow.currentSubaddressAccount, table.currentIndex)
+                        current_address = appWindow.currentWallet.address(appWindow.currentSubaddressAccount, table.currentIndex);
                     }
                 }
             }
@@ -511,7 +490,7 @@ Rectangle {
         table.model = currentWallet.subaddressModel;
 
         if (appWindow.currentWallet) {
-            addressLine.text = appWindow.currentWallet.address(appWindow.currentWallet.currentSubaddressAccount, 0)
+            current_address = appWindow.currentWallet.address(appWindow.currentWallet.currentSubaddressAccount, 0)
             appWindow.currentWallet.subaddress.refresh(appWindow.currentWallet.currentSubaddressAccount)
             table.currentIndex = 0
         }
